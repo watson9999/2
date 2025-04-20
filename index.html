@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speedy Sums Splash!</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#4682b4" />
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    }
+  </script>
+  <audio id="dingSound" preload="auto">
+    <source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA...AAA==" type="audio/mp3" />
+  </audio>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f8ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      background-image: url('https://cdn.pixabay.com/photo/2021/05/20/12/51/fish-6269836_1280.png');
+      background-repeat: no-repeat;
+      background-position: bottom right;
+      background-size: 150px;
+    }
+    .container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      position: relative;
+      max-width: 600px;
+    }
+    h1 {
+      color: #ff6347;
+      margin-bottom: 20px;
+    }
+    .question {
+      font-size: 3em;
+      margin-bottom: 20px;
+      color: #4682b4;
+    }
+    input[type='number'] {
+      font-size: 2em;
+      padding: 10px;
+      width: 80px;
+      text-align: center;
+      border: 2px solid #32cd32;
+      border-radius: 8px;
+    }
+    #feedback {
+      font-size: 1.5em;
+      margin-top: 20px;
+      min-height: 1.5em;
+    }
+    .correct {
+      color: #32cd32;
+    }
+    .incorrect {
+      color: #ff4500;
+    }
+    #score,
+    #timer,
+    #highScore {
+      font-size: 1.5em;
+      margin-top: 10px;
+      color: #4682b4;
+    }
+    #mistakes {
+      text-align: left;
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+    .mistake {
+      color: #333;
+      margin: 5px 0;
+    }
+    .mistake .wrong {
+      color: #ff4500;
+    }
+    .mistake .correct {
+      color: #32cd32;
+    }
+    #restartBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      background-color: #ffd700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Super Speedy Sums Splash!</h1>
+    <p>Help the friendly fish find the right number!</p>
+    <div class="question">
+      <span id="num1"></span> + <span id="num2"></span> =
+      <span id="answerField" style="display:inline-block; min-width:120px;">?</span>
+    </div>
+    <input type="number" id="answerInput" min="0" max="9" autofocus />
+<button id="startSpeech" style="margin-top: 15px; font-size: 1.2em; padding: 8px 16px; border-radius: 8px; border: none; background-color: #87cefa; cursor: pointer;">🎤 開始講數字</button>
+<div id="speechResult" style="margin-top: 10px; font-size: 1.2em; color: #555;"></div>
+
+    <div id="feedback"></div>
+    <div id="score">Score: 0</div>
+    <div id="highScore">High Score: 0</div>
+    <div id="timer">Time Left: 60s</div>
+    <div id="mistakes"></div>
+    <button id="restartBtn">Play Again</button>
+  </div>
+  <script>
+    let score = 0;
+    let highScore = 0;
+    let num1, num2;
+    let timer;
+    let timeLeft = 60;
+    let mistakes = [];
+
+    function generateQuestion() {
+      num1 = Math.floor(Math.random() * 9) + 1;
+      num2 = Math.floor(Math.random() * 9) + 1;
+      document.getElementById('num1').textContent = num1;
+      document.getElementById('num2').textContent = num2;
+      const input = document.getElementById('answerInput');
+      input.value = '';
+      input.focus();
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('answerField').textContent = '?';
+    }
+
+    function checkAnswer(userAnswer) {
+      const correctAnswer = (num1 + num2) % 10;
+      const answerDisplay = document.getElementById('answerField');
+
+      if (!isNaN(userAnswer) && userAnswer === correctAnswer) {
+        const correctEmojis = ['🐟', '✨', '🎉'];
+        const randomCorrect = correctEmojis[Math.floor(Math.random() * correctEmojis.length)];
+        answerDisplay.innerHTML = userAnswer + ' <span class="correct">✔' + randomCorrect + '</span>';
+        score++;
+        if (score > highScore) {
+          highScore = score;
+          document.getElementById('highScore').textContent = 'High Score: ' + highScore;
+        }
+        document.getElementById('score').textContent = 'Score: ' + score;
+      } else {
+        const wrongEmojis = ['😵', '💦'];
+        const randomWrong = wrongEmojis[Math.floor(Math.random() * wrongEmojis.length)];
+        answerDisplay.innerHTML = userAnswer + ' <span class="incorrect">✘' + randomWrong + '</span>';
+        mistakes.push({
+          question: `${num1} + ${num2}`,
+          userAnswer: userAnswer,
+          correctAnswer: correctAnswer
+        });
+      }
+      setTimeout(generateQuestion, 500);
+    }
+
+    function showMistakes() {
+      const container = document.getElementById('mistakes');
+      container.innerHTML = '<h3>Mistakes this round:</h3>';
+      if (mistakes.length === 0) {
+        container.innerHTML += '<p>No mistakes! 🎉</p>';
+        return;
+      }
+      mistakes.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'mistake';
+        div.innerHTML = `${m.question} = <span class="wrong">${m.userAnswer} ✘</span>, correct: <span class="correct">${m.correctAnswer}</span>`;
+        container.appendChild(div);
+      });
+    }
+
+    function startTimer() {
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = 'Time Left: ' + timeLeft + 's';
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          document.getElementById('feedback').textContent = "Time's up! 🕒";
+          document.getElementById('answerInput').disabled = true;
+          document.getElementById('dingSound').play();
+          document.getElementById('restartBtn').style.display = 'inline-block';
+          showMistakes();
+        }
+      }, 1000);
+    }
+
+    function restartGame() {
+      score = 0;
+      timeLeft = 60;
+      mistakes = [];
+      document.getElementById('score').textContent = 'Score: 0';
+      document.getElementById('timer').textContent = 'Time Left: 60s';
+      document.getElementById('mistakes').innerHTML = '';
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('answerInput').disabled = false;
+      document.getElementById('restartBtn').style.display = 'none';
+      generateQuestion();
+      startTimer();
+    }
+
+    document.getElementById('answerInput').addEventListener('input', function () {
+      const val = parseInt(this.value);
+      if (!isNaN(val)) {
+        checkAnswer(val);
+      }
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+    generateQuestion();
+    startTimer();
+  // 語音辨識功能（廣東話）
+  const startSpeechBtn = document.getElementById('startSpeech');
+  const speechResult = document.getElementById('speechResult');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-HK';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const result = event.results[0][0].transcript;
+      speechResult.textContent = '你講咗：「' + result + '」';
+      const chineseToDigit = {
+        '零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4,
+        '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+        '0': 0, '1': 1, '2': 2, '3': 3, '4': 4,
+        '5': 5, '6': 6, '7': 7, '8': 8, '9': 9
+      };
+      const val = chineseToDigit[result.trim()];
+      if (val !== undefined) {
+        checkAnswer(val);
+      } else {
+        speechResult.textContent += '（未能辨認為數字）';
+      }
+    };
+
+    recognition.onerror = (event) => {
+      speechResult.textContent = '語音辨識錯誤：' + event.error;
+    };
+
+    startSpeechBtn.onclick = () => {
+      speechResult.textContent = '請開始講數字⋯⋯';
+      recognition.start();
+    };
+  } else {
+    document.getElementById('startSpeech').disabled = true;
+    speechResult.textContent = '⚠️ 此瀏覽器不支援語音輸入';
+  }
+
+  </script>
+</body>
+</html>
